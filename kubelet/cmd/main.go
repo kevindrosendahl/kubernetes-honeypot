@@ -1,8 +1,12 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
+
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -11,24 +15,29 @@ import (
 )
 
 func main() {
-	// Create a new store and add a pod.
 	store, err := kubelet.NewFileSystemPodStore(os.Args[1])
 	if err != nil {
 		panic(err)
 	}
 
-	err = store.AddPod(&corev1.Pod{ObjectMeta: metav1.ObjectMeta{Namespace: "foo", Name: "bar"}})
+	client, err := mongo.NewClient(options.Client().ApplyURI("mongodb://localhost:27017"))
 	if err != nil {
 		panic(err)
 	}
 
-	// Re-open the store and print out the pods.
-	store, err = kubelet.NewFileSystemPodStore(os.Args[1])
+	auditor, err := kubelet.NewMongoDbAuditor(client, "local")
 	if err != nil {
 		panic(err)
 	}
 
-	pods, err := store.GetPods()
+	provider := kubelet.NewHoneypotProvider(store, auditor)
+
+	err = provider.CreatePod(context.Background(), &corev1.Pod{ObjectMeta: metav1.ObjectMeta{Namespace: "foo", Name: "bar"}})
+	if err != nil {
+		panic(err)
+	}
+
+	pods, err := provider.GetPods(context.Background())
 	if err != nil {
 		panic(err)
 	}

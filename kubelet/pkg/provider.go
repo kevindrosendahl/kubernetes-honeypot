@@ -7,16 +7,23 @@ import (
 )
 
 type HoneypotProvider struct {
-	podStore PodStore
-	auditor  Auditor
+	store   PodStore
+	auditor Auditor
+}
+
+func NewHoneypotProvider(store PodStore, auditor Auditor) *HoneypotProvider {
+	return &HoneypotProvider{
+		store:   store,
+		auditor: auditor,
+	}
 }
 
 func (p *HoneypotProvider) CreatePod(ctx context.Context, pod *corev1.Pod) error {
-	if err := p.auditor.CreatePod(ctx, pod); err != nil {
+	if err := p.auditor.AuditCreatePod(ctx, pod); err != nil {
 		return err
 	}
 
-	if err := p.podStore.AddPod(pod); err != nil {
+	if err := p.store.AddPod(pod); err != nil {
 		return err
 	}
 
@@ -24,11 +31,11 @@ func (p *HoneypotProvider) CreatePod(ctx context.Context, pod *corev1.Pod) error
 }
 
 func (p *HoneypotProvider) UpdatePod(ctx context.Context, pod *corev1.Pod) error {
-	if err := p.auditor.UpdatePod(ctx, pod); err != nil {
+	if err := p.auditor.AuditUpdatePod(ctx, pod); err != nil {
 		return err
 	}
 
-	if err := p.podStore.UpdatePod(pod); err != nil {
+	if err := p.store.UpdatePod(pod); err != nil {
 		return err
 	}
 
@@ -36,15 +43,15 @@ func (p *HoneypotProvider) UpdatePod(ctx context.Context, pod *corev1.Pod) error
 }
 
 func (p *HoneypotProvider) DeletePod(ctx context.Context, pod *corev1.Pod) error {
-	return p.podStore.RemovePod(pod)
+	return p.store.RemovePod(pod)
 }
 
 func (p *HoneypotProvider) GetPod(ctx context.Context, namespace, name string) (*corev1.Pod, error) {
-	return p.podStore.GetPod(namespace, name)
+	return p.store.GetPod(namespace, name)
 }
 
 func (p *HoneypotProvider) GetPodStatus(ctx context.Context, namespace, name string) (*corev1.PodStatus, error) {
-	pod, err := p.podStore.GetPod(namespace, name)
+	pod, err := p.store.GetPod(namespace, name)
 	if err != nil {
 		return nil, err
 	}
@@ -56,5 +63,5 @@ func (p *HoneypotProvider) GetPodStatus(ctx context.Context, namespace, name str
 }
 
 func (p *HoneypotProvider) GetPods(context.Context) ([]*corev1.Pod, error) {
-	return p.podStore.GetPods()
+	return p.store.GetPods()
 }
