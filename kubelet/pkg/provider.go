@@ -3,37 +3,49 @@ package kubelet
 import (
 	"context"
 	"fmt"
+	"github.com/virtual-kubelet/virtual-kubelet/errdefs"
 	"io"
 
 	log "github.com/sirupsen/logrus"
+	"github.com/virtual-kubelet/node-cli/provider"
 	"github.com/virtual-kubelet/virtual-kubelet/node/api"
-
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type HoneypotProvider struct {
-	store   PodStore
-	auditor Auditor
+	store          PodStore
+	auditor        Auditor
+	honeypotConfig *HoneypotConfig
+	kubeletConfig  *provider.InitConfig
 }
 
-func NewHoneypotProviderFromConfig(cfg *HoneypotConfig, nodeName string) (*HoneypotProvider, error) {
-	store, err := NewFileSystemPodStore(cfg.PodStorePath)
+func NewHoneypotProviderFromConfig(honeypotConfig *HoneypotConfig, kubeletConfig *provider.InitConfig) (*HoneypotProvider, error) {
+	store, err := NewFileSystemPodStore(honeypotConfig.PodStorePath)
 	if err != nil {
 		return nil, err
 	}
 
-	auditor, err := NewMongoDbAuditor(cfg.PodStorePath, nodeName)
+	auditor, err := NewMongoDbAuditor(honeypotConfig.ConnectionString, kubeletConfig.NodeName)
 	if err != nil {
 		return nil, err
 	}
 
-	return NewHoneypotProvider(store, auditor), nil
+	return NewHoneypotProvider(store, auditor, honeypotConfig, kubeletConfig), nil
 }
 
-func NewHoneypotProvider(store PodStore, auditor Auditor) *HoneypotProvider {
+func NewHoneypotProvider(
+	store PodStore,
+	auditor Auditor,
+	honeypotConfig *HoneypotConfig,
+	kubeletConfig *provider.InitConfig,
+) *HoneypotProvider {
 	return &HoneypotProvider{
-		store:   store,
-		auditor: auditor,
+		store:          store,
+		auditor:        auditor,
+		honeypotConfig: honeypotConfig,
+		kubeletConfig:  kubeletConfig,
 	}
 }
 
@@ -76,6 +88,10 @@ func (p *HoneypotProvider) DeletePod(ctx context.Context, pod *corev1.Pod) error
 func (p *HoneypotProvider) GetPod(ctx context.Context, namespace, name string) (*corev1.Pod, error) {
 	pod, err := p.store.GetPod(namespace, name)
 	if err != nil {
+		if errdefs.IsNotFound(err) {
+			return nil, err
+		}
+
 		return nil, handleError(err)
 	}
 
@@ -85,13 +101,19 @@ func (p *HoneypotProvider) GetPod(ctx context.Context, namespace, name string) (
 func (p *HoneypotProvider) GetPodStatus(ctx context.Context, namespace, name string) (*corev1.PodStatus, error) {
 	pod, err := p.store.GetPod(namespace, name)
 	if err != nil {
+		if errdefs.IsNotFound(err) {
+			return nil, err
+		}
+
 		return nil, handleError(err)
 	}
-	if pod != nil {
+	if pod == nil {
 		return nil, nil
 	}
 
-	return &pod.Status, nil
+	return &corev1.PodStatus{
+		Phase: corev1.PodRunning,
+	}, nil
 }
 
 func (p *HoneypotProvider) GetPods(context.Context) ([]*corev1.Pod, error) {
@@ -119,8 +141,89 @@ func (p *HoneypotProvider) RunInContainer(ctx context.Context, namespace, podNam
 	return internalError()
 }
 
-func (p *HoneypotProvider) ConfigureNode(context.Context, *corev1.Node) {
-	// no-op
+func (p *HoneypotProvider) ConfigureNode(ctx context.Context, node *corev1.Node) {
+	node.Status.Capacity = p.capacity()
+	node.Status.Allocatable = p.capacity()
+	node.Status.Conditions = p.nodeConditions()
+	node.Status.Addresses = p.nodeAddresses()
+	node.Status.DaemonEndpoints = p.nodeDaemonEndpoints()
+	os := p.kubeletConfig.OperatingSystem
+	if os == "" {
+		os = "Linux"
+	}
+	node.Status.NodeInfo.OperatingSystem = os
+	node.Status.NodeInfo.Architecture = "amd64"
+	node.ObjectMeta.Labels = make(map[string]string)
+}
+
+func (p *HoneypotProvider) capacity() corev1.ResourceList {
+	return corev1.ResourceList{
+		"cpu":    resource.MustParse(p.honeypotConfig.Capacity.Cpu),
+		"memory": resource.MustParse(p.honeypotConfig.Capacity.Memory),
+		"pods":   resource.MustParse(p.honeypotConfig.Capacity.Pods),
+	}
+}
+
+func (p *HoneypotProvider) nodeConditions() []corev1.NodeCondition {
+	return []corev1.NodeCondition{
+		{
+			Type:               "Ready",
+			Status:             corev1.ConditionTrue,
+			LastHeartbeatTime:  metav1.Now(),
+			LastTransitionTime: metav1.Now(),
+			Reason:             "KubeletReady",
+			Message:            "kubelet is ready.",
+		},
+		{
+			Type:               "OutOfDisk",
+			Status:             corev1.ConditionFalse,
+			LastHeartbeatTime:  metav1.Now(),
+			LastTransitionTime: metav1.Now(),
+			Reason:             "KubeletHasSufficientDisk",
+			Message:            "kubelet has sufficient disk space available",
+		},
+		{
+			Type:               "MemoryPressure",
+			Status:             corev1.ConditionFalse,
+			LastHeartbeatTime:  metav1.Now(),
+			LastTransitionTime: metav1.Now(),
+			Reason:             "KubeletHasSufficientMemory",
+			Message:            "kubelet has sufficient memory available",
+		},
+		{
+			Type:               "DiskPressure",
+			Status:             corev1.ConditionFalse,
+			LastHeartbeatTime:  metav1.Now(),
+			LastTransitionTime: metav1.Now(),
+			Reason:             "KubeletHasNoDiskPressure",
+			Message:            "kubelet has no disk pressure",
+		},
+		{
+			Type:               "NetworkUnavailable",
+			Status:             corev1.ConditionFalse,
+			LastHeartbeatTime:  metav1.Now(),
+			LastTransitionTime: metav1.Now(),
+			Reason:             "RouteCreated",
+			Message:            "RouteController created a route",
+		},
+	}
+}
+
+func (p *HoneypotProvider) nodeAddresses() []corev1.NodeAddress {
+	return []corev1.NodeAddress{
+		{
+			Type:    "InternalIP",
+			Address: p.kubeletConfig.InternalIP,
+		},
+	}
+}
+
+func (p *HoneypotProvider) nodeDaemonEndpoints() corev1.NodeDaemonEndpoints {
+	return corev1.NodeDaemonEndpoints{
+		KubeletEndpoint: corev1.DaemonEndpoint{
+			Port: p.kubeletConfig.DaemonPort,
+		},
+	}
 }
 
 func handleError(err error) error {

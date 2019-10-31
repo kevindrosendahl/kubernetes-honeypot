@@ -24,11 +24,11 @@ func main() {
 	node, err := cli.New(ctx,
 		cli.WithProvider("honeypot", func(cfg provider.InitConfig) (provider.Provider, error) {
 			var conf kubelet.HoneypotConfig
-			if _, err := toml.Decode(cfg.ConfigPath, &conf); err != nil {
+			if _, err := toml.DecodeFile(cfg.ConfigPath, &conf); err != nil {
 				return nil, err
 			}
 
-			return kubelet.NewHoneypotProviderFromConfig(&conf, cfg.NodeName)
+			return kubelet.NewHoneypotProviderFromConfig(&conf, &cfg)
 		}),
 		// Adds flags and parsing for using logrus as the configured logger
 		cli.WithPersistentFlags(logConfig.FlagSet()),
