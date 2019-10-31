@@ -3,25 +3,16 @@ module github.com/kevindrosendahl/kubernetes-honeypot/kubelet
 go 1.13
 
 require (
-	github.com/go-stack/stack v1.8.0 // indirect
-	github.com/gogo/protobuf v1.2.1 // indirect
+	github.com/BurntSushi/toml v0.3.1
 	github.com/golang/snappy v0.0.1 // indirect
-	github.com/google/go-cmp v0.3.1 // indirect
-	github.com/google/gofuzz v1.0.0 // indirect
-	github.com/json-iterator/go v1.1.6 // indirect
-	github.com/kr/pretty v0.1.0 // indirect
-	github.com/spf13/pflag v1.0.3 // indirect
-	github.com/stretchr/testify v1.3.0 // indirect
+	github.com/sirupsen/logrus v1.4.2
 	github.com/tidwall/pretty v1.0.0 // indirect
+	github.com/virtual-kubelet/node-cli v0.1.2
+	github.com/virtual-kubelet/virtual-kubelet v1.1.0
 	github.com/xdg/scram v0.0.0-20180814205039-7eeb5667e42c // indirect
 	github.com/xdg/stringprep v1.0.0 // indirect
 	go.mongodb.org/mongo-driver v1.1.2
-	golang.org/x/net v0.0.0-20190404232315-eb5bcb51f2a3 // indirect
-	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127 // indirect
-	gopkg.in/inf.v0 v0.9.1 // indirect
-	gopkg.in/yaml.v2 v2.2.2 // indirect
 	k8s.io/api v0.0.0
-	k8s.io/apimachinery v0.0.0
 )
 
 replace k8s.io/legacy-cloud-providers => k8s.io/legacy-cloud-providers v0.0.0-20190805144654-3d5bf3a310c1

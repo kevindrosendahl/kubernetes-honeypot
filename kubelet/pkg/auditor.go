@@ -10,4 +10,6 @@ type Auditor interface {
 	AuditCreatePod(ctx context.Context, pod *corev1.Pod) error
 
 	AuditUpdatePod(ctx context.Context, pod *corev1.Pod) error
+
+	AuditRemovePod(ctx context.Context, pod *corev1.Pod) error
 }

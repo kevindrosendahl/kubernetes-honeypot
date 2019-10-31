@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/virtual-kubelet/virtual-kubelet/errdefs"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -45,6 +46,10 @@ func (s *InMemoryPodStore) UpdatePod(pod *corev1.Pod) error {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
+	if _, ok := s.pods[podKey(pod)]; !ok {
+		return errdefs.NotFound("")
+	}
+
 	s.pods[podKey(pod)] = pod
 	return nil
 }
@@ -61,7 +66,12 @@ func (s *InMemoryPodStore) GetPod(namespace, name string) (*corev1.Pod, error) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
-	return s.pods[key(namespace, name)], nil
+	pod, ok := s.pods[key(namespace, name)]
+	if !ok {
+		return nil, errdefs.NotFound("")
+	}
+
+	return pod.DeepCopy(), nil
 }
 
 func (s *InMemoryPodStore) GetPods() ([]*corev1.Pod, error) {
@@ -70,7 +80,7 @@ func (s *InMemoryPodStore) GetPods() ([]*corev1.Pod, error) {
 
 	pods := make([]*corev1.Pod, 0, len(s.pods))
 	for _, pod := range s.pods {
-		pods = append(pods, pod)
+		pods = append(pods, pod.DeepCopy())
 	}
 
 	return pods, nil

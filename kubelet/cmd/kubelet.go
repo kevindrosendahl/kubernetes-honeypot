@@ -2,45 +2,51 @@ package main
 
 import (
 	"context"
-	"fmt"
-	"os"
-
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
-
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	kubelet "github.com/kevindrosendahl/kubernetes-honeypot/kubelet/pkg"
+
+	"github.com/BurntSushi/toml"
+	"github.com/sirupsen/logrus"
+	cli "github.com/virtual-kubelet/node-cli"
+	logruscli "github.com/virtual-kubelet/node-cli/logrus"
+	"github.com/virtual-kubelet/node-cli/provider"
+	"github.com/virtual-kubelet/virtual-kubelet/log"
+	logruslogger "github.com/virtual-kubelet/virtual-kubelet/log/logrus"
 )
 
 func main() {
-	store, err := kubelet.NewFileSystemPodStore(os.Args[1])
+	ctx := cli.ContextWithCancelOnSignal(context.Background())
+	logger := logrus.StandardLogger()
+
+	log.L = logruslogger.FromLogrus(logrus.NewEntry(logger))
+	logConfig := &logruscli.Config{LogLevel: "info"}
+
+	node, err := cli.New(ctx,
+		cli.WithProvider("honeypot", func(cfg provider.InitConfig) (provider.Provider, error) {
+			var conf kubelet.HoneypotConfig
+			if _, err := toml.Decode(cfg.ConfigPath, &conf); err != nil {
+				return nil, err
+			}
+
+			return kubelet.NewHoneypotProviderFromConfig(&conf)
+		}),
+		// Adds flags and parsing for using logrus as the configured logger
+		cli.WithPersistentFlags(logConfig.FlagSet()),
+		cli.WithPersistentPreRunCallback(func() error {
+			return logruscli.Configure(logConfig, logger)
+		}),
+	)
+
 	if err != nil {
 		panic(err)
 	}
 
-	client, err := mongo.NewClient(options.Client().ApplyURI("mongodb://localhost:27017"))
-	if err != nil {
+	// Notice that the context is not passed in here, this is due to limitations
+	// of the underlying CLI library (cobra).
+	// contexts get passed through from `cli.New()`
+	//
+	// Args can be specified here, or os.Args[1:] will be used.
+	if err := node.Run(); err != nil {
 		panic(err)
 	}
-
-	auditor, err := kubelet.NewMongoDbAuditor(client, "local")
-	if err != nil {
-		panic(err)
-	}
-
-	provider := kubelet.NewHoneypotProvider(store, auditor)
-
-	err = provider.CreatePod(context.Background(), &corev1.Pod{ObjectMeta: metav1.ObjectMeta{Namespace: "foo", Name: "bar"}})
-	if err != nil {
-		panic(err)
-	}
-
-	pods, err := provider.GetPods(context.Background())
-	if err != nil {
-		panic(err)
-	}
-
-	fmt.Println(pods)
 }
