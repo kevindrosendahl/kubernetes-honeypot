@@ -28,7 +28,7 @@ func main() {
 				return nil, err
 			}
 
-			return kubelet.NewHoneypotProviderFromConfig(&conf)
+			return kubelet.NewHoneypotProviderFromConfig(&conf, cfg.NodeName)
 		}),
 		// Adds flags and parsing for using logrus as the configured logger
 		cli.WithPersistentFlags(logConfig.FlagSet()),

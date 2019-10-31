@@ -12,4 +12,8 @@ type Auditor interface {
 	AuditUpdatePod(ctx context.Context, pod *corev1.Pod) error
 
 	AuditRemovePod(ctx context.Context, pod *corev1.Pod) error
+
+	AuditRunInContainer(ctx context.Context, namespace, podName, containerName string, cmd []string) error
+
+	AuditGetContainerLogs(ctx context.Context, namespace, podName, containerName string) error
 }
