@@ -27,7 +27,7 @@ func NewHoneypotProviderFromConfig(honeypotConfig *HoneypotConfig, kubeletConfig
 		return nil, err
 	}
 
-	auditor, err := NewMongoDbAuditor(honeypotConfig.ConnectionString, kubeletConfig.NodeName)
+	auditor, err := NewAuditorFromConfig(honeypotConfig, kubeletConfig)
 	if err != nil {
 		return nil, err
 	}

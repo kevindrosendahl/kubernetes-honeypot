@@ -1,0 +1,8 @@
+auditor = "logging"
+connection_string = "mongodb://localhost:27017"
+pod_store_path = "/home/eprokop/repos/kubernetes-honeypot/pods.json"
+
+[capacity]
+cpu = "8"
+memory = "16G"
+pods = "256"
