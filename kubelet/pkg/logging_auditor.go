@@ -2,7 +2,7 @@ package kubelet
 
 import (
 	"context"
-	log "github.com/sirupsen/logrus"
+	"fmt"
 	corev1 "k8s.io/api/core/v1"
 	"time"
 )
@@ -24,7 +24,7 @@ func (a *LoggingAuditor) AuditCreatePod(ctx context.Context, pod *corev1.Pod) er
 		Pod:       pod,
 		Timestamp: time.Now(),
 	}
-	log.Info("%v+", event)
+	fmt.Printf("%v+\n", event)
 	return nil
 }
 
@@ -36,7 +36,7 @@ func (a *LoggingAuditor) AuditUpdatePod(ctx context.Context, pod *corev1.Pod) er
 		Timestamp: time.Now(),
 	}
 
-	log.Info("%v+", event)
+	fmt.Printf("%v+\n", event)
 	return nil
 }
 
@@ -48,7 +48,7 @@ func (a *LoggingAuditor) AuditRemovePod(ctx context.Context, pod *corev1.Pod) er
 		Timestamp: time.Now(),
 	}
 
-	log.Info("%v+", event)
+	fmt.Printf("%v+\n", event)
 	return nil
 }
 
@@ -62,7 +62,7 @@ func (a *LoggingAuditor) AuditRunInContainer(ctx context.Context, namespace, pod
 		Timestamp:     time.Now(),
 	}
 
-	log.Info("%v+", request)
+	fmt.Printf("%v+\n", request)
 	return nil
 }
 
@@ -75,6 +75,6 @@ func (a *LoggingAuditor) AuditGetContainerLogs(ctx context.Context, namespace, p
 		Timestamp:     time.Now(),
 	}
 
-	log.Info("%v+", request)
+	fmt.Printf("%v+\n", request)
 	return nil
 }
