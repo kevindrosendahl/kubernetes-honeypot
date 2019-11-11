@@ -111,8 +111,23 @@ func (p *HoneypotProvider) GetPodStatus(ctx context.Context, namespace, name str
 		return nil, nil
 	}
 
+	containerStatuses := make([]corev1.ContainerStatus, len(pod.Spec.Containers))
+	for _, container := range pod.Spec.Containers {
+		status := corev1.ContainerStatus{
+			Name: container.Name,
+			State: corev1.ContainerState{
+				Running: &corev1.ContainerStateRunning{StartedAt: metav1.Now()},
+			},
+			Ready: true,
+			Image: container.Image,
+		}
+
+		containerStatuses = append(containerStatuses, status)
+	}
+
 	return &corev1.PodStatus{
-		Phase: corev1.PodRunning,
+		Phase:             corev1.PodRunning,
+		ContainerStatuses: containerStatuses,
 	}, nil
 }
 
