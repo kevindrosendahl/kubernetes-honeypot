@@ -1,0 +1,12 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: deployments-admin-global
+subjects:
+  - kind: User
+    name: system:anonymous # Name is case sensitive
+    apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: ClusterRole
+  name: deployment-admin
+  apiGroup: rbac.authorization.k8s.io
