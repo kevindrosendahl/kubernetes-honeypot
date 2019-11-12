@@ -6,12 +6,6 @@ rules:
   - level: None
     userGroups: ["system:authenticated", "system:masters"]
   - level: Request
-    resources:
-      - group: ""
-        resources: []
-  - level: Request
-    nonResourceURLs:
-      - "/*"
   # - level: None
   #   # Long-running requests like watches that fall under this rule will not
   #   # generate an audit event in RequestReceived.
