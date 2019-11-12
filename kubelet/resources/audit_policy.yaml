@@ -3,19 +3,16 @@ kind: Policy
 rules:
   - level: None
     users: ["minikube", "system:serviceaccount:kube-system:coredns"]
+  - level: None
+    userGroups: ["system:authenticated"]
   - level: Request
     resources:
       - group: ""
-        resources: ["pods", "deployments", "secrets", "services"]
-  # Don't log authenticated requests to certain non-resource URL paths.
-  - level: None
-    userGroups: ["system:authenticated"]
+        resources: ["*"]
     nonResourceURLs:
-      - "/api*" # Wildcard matching.
-      - "/version"
-  # A catch-all rule to not log all other requests
-  - level: None
-    # Long-running requests like watches that fall under this rule will not
-    # generate an audit event in RequestReceived.
-    omitStages:
-      - "RequestReceived"
+      - "/*"
+  # - level: None
+  #   # Long-running requests like watches that fall under this rule will not
+  #   # generate an audit event in RequestReceived.
+  #   omitStages:
+  #     - "RequestReceived"
