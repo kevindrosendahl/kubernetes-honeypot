@@ -4,7 +4,7 @@ rules:
   - level: None
     users: ["minikube", "system:serviceaccount:kube-system:coredns"]
   - level: None
-    userGroups: ["system:authenticated"]
+    userGroups: ["system:authenticated", "system:masters"]
   - level: Request
     resources:
       - group: ""
