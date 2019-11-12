@@ -39,17 +39,6 @@ filter {
     source => "message"
     remove_field => [ "annotations" ]
   }
-
-  cidr {
-    add_tag => [ "_ignoredcidr" ]
-    address => [ "%{sourceIPs}" ]
-    network => [ "192.0.2.0/24" ]
-  }
-
-  if "_ignoredcidr" in [tags] {
-    drop {
-    }
-  }
 }
 
 output {
