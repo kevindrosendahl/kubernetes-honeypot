@@ -9,6 +9,7 @@ rules:
     resources:
       - group: ""
         resources: []
+  - level: Request
     nonResourceURLs:
       - "/*"
   # - level: None
