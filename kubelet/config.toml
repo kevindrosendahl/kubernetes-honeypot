@@ -1,6 +1,6 @@
-auditor = "logging"
-connection_string = "mongodb://localhost:27017"
-pod_store_path = "/home/eprokop/repos/kubernetes-honeypot/pods.json"
+auditor = "mongo"
+connection_string = "mongodb+srv://kubelet:qr4zx4YdzmwPuLmx@kubernetes-honeypot-audit-spuml.gcp.mongodb.net/test?retryWrites=true&w=majority"
+pod_store_path = "/Users/eprokop/repos/kubernetes-honeypot/kubelet/pods.json"
 
 [capacity]
 cpu = "8"
