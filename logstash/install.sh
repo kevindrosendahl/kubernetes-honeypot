@@ -2,9 +2,9 @@
 
 set -eu
 
-AUDIT_LOG_PATH=${1}
-CONNECTION_STRING=${2}
+CONNECTION_STRING=${1}
 HOSTNAME=$(hostname | tr -d '\n')
+AUDIT_LOG_PATH=$(sudo find /var -name audit.log | grep 'merged' | tr -d '\n')
 
 # Install JRE and logstash (this sets up some important config).
 apt install -y openjdk-11-jre-headless
