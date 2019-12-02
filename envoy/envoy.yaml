@@ -57,7 +57,7 @@ static_resources:
               domains: ["*"]
               routes:
               - match: { prefix: "/" }
-                route: { cluster: k8s_443 }
+                route: { cluster: k8s_8443 }
           http_filters:
           - name: envoy.router
           access_log:
@@ -75,7 +75,7 @@ static_resources:
                 duration: "%DURATION%"
                 source: "%DOWNSTREAM_REMOTE_ADDRESS%"
                 user_agent: "%REQ(USER-AGENT)%"
-  - name: k8s_8080
+  - name: k8s_6443
     address:
       socket_address: { address: "REPLACE_WITH_IP", port_value: 6443 }
     filter_chains:
@@ -92,7 +92,7 @@ static_resources:
               domains: ["*"]
               routes:
               - match: { prefix: "/" }
-                route: { cluster: k8s_6443 }
+                route: { cluster: k8s_8443 }
           http_filters:
           - name: envoy.router
           access_log:
@@ -151,7 +151,7 @@ static_resources:
     type: STATIC
     lb_policy: ROUND_ROBIN
     load_assignment:
-      cluster_name: k8s_insecure
+      cluster_name: k8s_8080
       endpoints:
       - lb_endpoints:
         - endpoint:
@@ -159,40 +159,6 @@ static_resources:
               socket_address:
                 address: 127.0.0.1
                 port_value: 8080
-  - name: k8s_443
-    connect_timeout: 0.25s
-    type: STATIC
-    lb_policy: ROUND_ROBIN
-    load_assignment:
-      cluster_name: k8s_443
-      endpoints:
-      - lb_endpoints:
-        - endpoint:
-            address:
-              socket_address:
-                address: 127.0.0.1
-                port_value: 443
-    transport_socket:
-      name: envoy.transport_sockets.tls
-      typed_config:
-        "@type": type.googleapis.com/envoy.api.v2.auth.UpstreamTlsContext
-  - name: k8s_6443
-    connect_timeout: 0.25s
-    type: STATIC
-    lb_policy: ROUND_ROBIN
-    load_assignment:
-      cluster_name: k8s_6443
-      endpoints:
-      - lb_endpoints:
-        - endpoint:
-            address:
-              socket_address:
-                address: 127.0.0.1
-                port_value: 6443
-    transport_socket:
-      name: envoy.transport_sockets.tls
-      typed_config:
-        "@type": type.googleapis.com/envoy.api.v2.auth.UpstreamTlsContext
   - name: k8s_8443
     connect_timeout: 0.25s
     type: STATIC
